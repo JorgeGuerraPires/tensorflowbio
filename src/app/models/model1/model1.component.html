@@ -1,0 +1,71 @@
+<!-- <h1>Running a simple Neural Network against naive guessing (average value)</h1>
+<h2>Parametrize your NN</h2> -->
+
+
+<!-- <section class="center">
+    <mat-form-field class="example-form-field" appearance="fill">
+        <mat-label>How many epochs</mat-label>
+        <input matInput type="text" [(ngModel)]="NNepochs">
+    </mat-form-field>
+</section>
+ -->
+
+<section class="main-div">
+
+    <mat-card class="example-card ">
+        <mat-card-header>
+            <mat-card-title>Running a simple Neural Network against naive guessing (average value)</mat-card-title>
+            <mat-card-subtitle>Parametrize your NN</mat-card-subtitle>
+
+            <mat-card-subtitle>
+                <p *ngIf="working">working on it....</p>
+            </mat-card-subtitle>
+
+        </mat-card-header>
+        <mat-card-content>
+            <p>{{longText}}</p>
+            <mat-form-field class="example-form-field" appearance="fill">
+
+                <mat-label>How many epochs</mat-label>
+                <input matInput type="text" [(ngModel)]="NNepochs">
+            </mat-form-field>
+
+        </mat-card-content>
+        <mat-card-actions>
+            <button *ngIf="!working" (click)="linearregression(target)" mat-raised-button color="primary">Train
+            </button>
+            <button (click)="plotting()" mat-raised-button color="primary">Plot </button>
+        </mat-card-actions>
+
+    </mat-card>
+</section>
+
+<section #target class="results">
+    <mat-card class="example-card ">
+        <mat-card-header>
+            <mat-card-title>Statistics</mat-card-title>
+            <mat-card-subtitle>Numbers to access the NN perfomance</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+            <!-- <h2>Results</h2> -->
+            <p>All the results are in seconds of "error"</p>
+
+
+            <!-- <h1>Simple regression model with TensorFlow.js</h1> -->
+            <h2></h2>
+
+            <p>This is estimating from average: {{average}}</p>
+
+            <p>This is estimating from abs value from average: {{abs}} </p>
+
+
+            <p>This is estimating using our simple network: </p>
+            <div id="neural network"></div>
+            <p>Evaluating the model after training: {{evaluation}}</p>
+
+        </mat-card-content>
+
+    </mat-card>
+
+</section>

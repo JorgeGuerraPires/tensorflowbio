@@ -1,0 +1,47 @@
+.info {
+    color: black;
+}
+
+.example-form {
+    min-width: 150px;
+    max-width: 500px;
+    width: 100%;
+}
+
+.example-full-width {
+    width: 100%;
+}
+
+
+.center {
+    margin: auto;
+    width: 50%;
+    border: 3px solid green;
+    padding: 10px;
+    padding-bottom: 10rem;
+}
+
+.example-card {
+    max-width: 400px;
+}
+
+p {
+    color: white;
+}
+
+mat-card-title {
+    color: white;
+}
+
+.main-div {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.results {
+    margin-right: 5rem;
+    margin-left: 35rem;
+    padding-bottom: 5rem;
+}
