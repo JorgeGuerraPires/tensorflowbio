@@ -20,6 +20,14 @@
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
+    "paths": {
+      "tfjs-biomodels": [
+        "dist/tfjs-biomodels"
+      ],
+      "tfjs-metrics": [
+        "dist/tfjs-metrics"
+      ]
+    },
     "lib": [
       "ES2022",
       "dom"

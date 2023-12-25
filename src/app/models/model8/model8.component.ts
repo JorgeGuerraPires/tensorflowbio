@@ -4,6 +4,8 @@ import { Component, OnInit } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 
+import { TfjsMetricsService } from 'tfjs-metrics';
+
 
 const csvUrl =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRyCGmhrKkYT4v6s52NWG5tU0_Y54coitcv-tAah1SNm0Pq2jhPkSUOA6vg29cHV8aqgZH_KnbO5gGp/pub?gid=1371905326&single=true&output=csv';
@@ -18,6 +20,7 @@ export class Model8Component implements OnInit {
 
   dataset!: any;
 
+  constructor(private readonly tfmetrics: TfjsMetricsService){}
 
   ngOnInit(): void {
     this.loadData();
@@ -175,10 +178,29 @@ export class Model8Component implements OnInit {
     });
 
 
-    // Output value should be near 0.
-    (model.predict(tf.tensor2d([[...this.class_0_sample]])) as tf.Tensor).print();
-    // Output value should be near 1.
-    (model.predict(tf.tensor2d([[...this.class_1_sample]])) as tf.Tensor).print();
+    console.log("Samples for testing: ", this.features_test);
+
+    console.log("Samples for testing: ", this.target_test);
+
+    //Confusion matrix
+    const confusion_matrix: any =  await this.tfmetrics.confusionMatrix(model, this.features_test, this.target_test);
+    console.log([confusion_matrix]);
+    //Performance metrics
+    
+    const performance= this.tfmetrics.performance_metrics(confusion_matrix);
+    console.log("Performance: ", performance);
+
+    //Downloading the final model    
+    await model.save('downloads://my-model');
+
+
+
+
+
+    // // Output value should be near 0.
+    // (model.predict(tf.tensor2d([[...this.class_0_sample]])) as tf.Tensor).print();
+    // // Output value should be near 1.
+    // (model.predict(tf.tensor2d([[...this.class_1_sample]])) as tf.Tensor).print();
 
     // (model.predict(this.normalizeTensor(tf.tensor2d([[...this.class_0_sample]]), dataMean, dataStd)) as tf.Tensor).print();
     // // Output value should be near 1.
@@ -187,6 +209,11 @@ export class Model8Component implements OnInit {
 
   features_array: any = [];
   target_array: any = [];
+
+  //Dataset for calculating performance measures of the model
+  features_test: any = [];
+  target_test: any = [];
+
 
   class_0_sample: any;
   class_1_sample: any;
@@ -198,6 +225,10 @@ export class Model8Component implements OnInit {
 
     let counter_class_0 = 0;
     let counter_class_1 = 0;
+
+    let test_counter_heartdisease =0;
+    let test_counter_non_heartdisease =0;
+
 
     /*** */
     const number_of_samples = 500;
@@ -237,6 +268,16 @@ export class Model8Component implements OnInit {
         counter_class_1++;
         features.push(Object.values(e.xs));
         target.push(e.ys.HeartDisease);
+      } else if ((e.ys.HeartDisease === 1) && (test_counter_heartdisease < 50) && (Math.random() < 0.5)) {
+        this.features_test.push(Object.values(e.xs));
+        this.target_test.push(e.ys.HeartDisease);
+        test_counter_heartdisease++
+
+      }else if ((e.ys.HeartDisease === 0) && (test_counter_non_heartdisease < 50) && (Math.random() < 0.5)) {
+        this.features_test.push(Object.values(e.xs));
+        this.target_test.push(e.ys.HeartDisease);
+        test_counter_non_heartdisease++
+
       }
 
     });

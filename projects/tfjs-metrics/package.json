@@ -1,0 +1,19 @@
+{
+  "name": "tfjs-metrics",
+  "version": "0.0.6",
+  "peerDependencies": {
+    "@angular/common": "^15.0.0",
+    "@angular/core": "^15.0.0",
+    "@tensorflow/tfjs": "^4.4.0"
+  },
+  
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "author": "Jorge Guerra Pires, Ph.D.",
+  "keywords": ["Angular", "TypeScript", 
+  "neural networks", "deep learning", "tensorflowjs", "tensorflow", "machine learning"],
+  "license": "MIT",
+  "description": "A set of basic performance metrics for TensorFlow.js in Angular. Those metrics are used to validate your model after training. It was created to be used together with TensorFlow.js"
+
+}

@@ -4,6 +4,9 @@ import { Component, OnInit } from '@angular/core';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 
+// import { TfjsMetricsService } from 'projects/tfjs-metrics/src/public-api';
+import { TfjsMetricsService } from 'tfjs-metrics';
+
 const csvUrl =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSUgRO2FRhFUA6ycWjKiol5mqfHPWcPuwOmJJxPbMT4PLOa86Bj_dobndkogPRWrTce8VeKDIVjXr6B/pub?gid=1111655281&single=true&output=csv';
 
@@ -16,6 +19,11 @@ const csvUrl =
 export class Model7Component implements OnInit {
 
   dataset!: any;
+ 
+ 
+
+
+  constructor(private readonly tfmetrics: TfjsMetricsService){}
 
   ngOnInit(): void {
     this.loadData();
@@ -38,6 +46,10 @@ export class Model7Component implements OnInit {
   features_array: any = [];
   target_array: any = [];
 
+  features_test: any = [];
+  target_test: any = [];
+
+
   async visualizeDataset() {
     // tfjs-vis surface's names and tabs
     const dataSurface = { name: 'Dataset Surgical binary classification (Kaggle)', tab: 'Charts' };
@@ -45,13 +57,19 @@ export class Model7Component implements OnInit {
     const classOne: any = [];
 
     let counter_class_0 = 0, counter_class_1 = 0;
-    const number_of_samples = 200;
+    const number_of_samples = 200;    
+   
+    let test_counter_complication =0;
+    let test_counter_non_complication =0;
+
 
     await this.dataset.forEachAsync((e: any) => {
       // Extract the features from the dataset
       const features = { x: e.xs.bmi, y: e.xs.gender };
+
       // If the label is 0, add the features to the "classZero" array
       if ((e.ys.complication === 0) && (counter_class_0 < number_of_samples) && (Math.random() < 0.5)) {
+       
         counter_class_0++;
         classZero.push(features);
 
@@ -67,8 +85,24 @@ export class Model7Component implements OnInit {
         //Adding to global variable for training
         this.features_array.push(features);
         this.target_array.push(e.ys.complication);
+
+      } else if ((e.ys.complication === 1) && (test_counter_complication < 50) && (Math.random() < 0.5)){
+
+        this.features_test.push(Object.values(e.xs));
+        this.target_test.push(e.ys.complication);
+        test_counter_complication++;
+
+      } else if ((e.ys.complication === 0) && (test_counter_non_complication < 50) && (Math.random() < 0.5)){
+
+        this.features_test.push(Object.values(e.xs));
+        this.target_test.push(e.ys.complication);
+        test_counter_non_complication++;
+        
+
       }
     });
+
+    // console.log("Target for testing: ",  target_test);
 
     // Specify the name of the labels. This will show up in the chart's legend.
     const series = ['No Complication', 'Complication'];
@@ -93,6 +127,7 @@ export class Model7Component implements OnInit {
 
     //Creating tensors
     await this.dataset_to_array();
+
     this.shuffle(this.features_array, this.target_array);
 
     const features_tensor_raw = tf.tensor2d(this.features_array, [this.features_array.length, numOfFeatures]);
@@ -165,11 +200,24 @@ export class Model7Component implements OnInit {
       ],
     });
 
-    // Output value should be near 0.
-    (model.predict(tf.tensor2d([[...this.class_0_sample]])) as tf.Tensor).print();
-    // Output value should be near 1.
-    (model.predict(tf.tensor2d([[...this.class_1_sample]])) as tf.Tensor).print();
+    // // Output value should be near 0.
+    // (model.predict(tf.tensor2d([[...this.class_0_sample]])) as tf.Tensor).print();
+    // // Output value should be near 1.
+    // (model.predict(tf.tensor2d([[...this.class_1_sample]])) as tf.Tensor).print();
 
+    
+    console.log("Samples for testing: ", this.features_test);
+    
+    //Confusion matrix
+    const confusion_matrix: any =  await this.tfmetrics.confusionMatrix(model, this.features_test, this.target_test);
+    console.log([confusion_matrix]);
+    //Performance metrics
+    
+    const performance= this.tfmetrics.performance_metrics(confusion_matrix);
+    console.log("Performance: ", performance);
+
+    //Downloading the final model    
+    await model.save('downloads://my-model');
 
   }
 

@@ -3,9 +3,30 @@ import { Component, OnInit } from '@angular/core';
 //TensorFlow.js
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
+// import { TfjsMetricsService } from 'projects/tfjs-metrics/src/public-api';
+import { TfjsMetricsService } from 'tfjs-metrics';
+import { BatmanbeltService } from 'src/app/shared/batmanbelt.service';
+import { TfjsBiomodelsService } from 'projects/tfjs-biomodels/src/public-api';
 
+
+
+
+// const csvUrl =
+//   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIscV53ecu0x-apaqh1Sk3ED3qlVdMLxh9AcPdhDPH2VNogn-kKfAP8j9MYKWk7_inouIR9dFMDaUe/pub?gid=0&single=true&output=csv';
+
+//6-feature model
+// const csvUrl =
+//   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWn_2YyEy10tw8ONExMhXK7QZDp6Q23rkBEjfrnMGdtil2NzBa3VH4HtvASyIlvxdFBZq13807doAd/pub?gid=0&single=true&output=csv';
+
+//1-feature model
+// const csvUrl =
+//   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIscV53ecu0x-apaqh1Sk3ED3qlVdMLxh9AcPdhDPH2VNogn-kKfAP8j9MYKWk7_inouIR9dFMDaUe/pub?gid=0&single=true&output=csv';
+
+
+
+  //3-feature model
 const csvUrl =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTIscV53ecu0x-apaqh1Sk3ED3qlVdMLxh9AcPdhDPH2VNogn-kKfAP8j9MYKWk7_inouIR9dFMDaUe/pub?gid=0&single=true&output=csv';
+'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbZKM90cRA1GzO8e_EwbtjebWHRQ56bF5WTG7Nv6W0PL1GBanw8Tbszb7jS18oeuklk3oLxDWCzza2/pub?gid=0&single=true&output=csv';
 
 
 @Component({
@@ -17,10 +38,19 @@ export class Model6Component implements OnInit {
 
   dataset!: any;
 
+
+  constructor(private readonly batmanbelt: BatmanbeltService, private readonly tfmetrics: TfjsMetricsService, private readonly biomodels: TfjsBiomodelsService){}
+
   ngOnInit(): void {
+
     this.loadData();
     this.visualizeDataset();
     this.defineAndTrainModel();
+
+    // console.log(this.tfmetrics.calculator(2,2));
+
+    // this.biomodels.diabetes_model([80, 0, 1, 25.19, 6.6, 140]);
+
   }
 
 
@@ -69,54 +99,68 @@ export class Model6Component implements OnInit {
 
   async defineAndTrainModel() {
 
-    const numberEpochs = 300;
+    const numberEpochs = 3;
 
     // numOfFeatures is the number of column or features minus the label column
     const numOfFeatures = (await this.dataset.columnNames()).length - 1;
     const trainingSurface = { name: 'Loss and MSE', tab: 'Training' };
 
-    const flattenedDataset = this.dataset
-      .map((e: any) => ({ xs: Object.values(e.xs), ys: Object.values(e.ys) }))
-      // Convert the features (xs) and labels (ys) to an array
-      .batch(100)
-      .shuffle(100, 17); // buffer size and seed
+    // const flattenedDataset = this.dataset
+    //   .map((e: any) => ({ xs: Object.values(e.xs), ys: Object.values(e.ys) }))
+    //   // Convert the features (xs) and labels (ys) to an array
+    //   .batch(100)
+    //   .shuffle(100, 17); // buffer size and seed
 
     // Define the model.
 
     const features: any = [];
     const target: any = [];
 
+    const features_test: any = [];
+    const target_test: any = [];
+    
+    let test_counter_diabetes =0;
+    let test_counter_non_diabetes =0;
+
+
+
     let counter_no_diabetes = 0;
     let counter_diabetes = 0;
+    
+    await this.dataset.shuffle(3);
 
     await this.dataset.forEachAsync((e: any) => {
+
       // Extract the features from the dataset
       const aux = { x: e.xs.HbA1c_level, y: e.xs.heart_disease };
       // If the label is 0, add the features to the "classZero" array
-      features.push(Object.values(e.xs));
-      target.push(e.ys.diabetes);
+      
+      if((test_counter_diabetes<50) && (e.ys.diabetes===1)) {//will sample 100 for testing
+        features_test.push(Object.values(e.xs));
+        target_test.push(e.ys.diabetes);
+        test_counter_diabetes++;
+      } else if((test_counter_non_diabetes<50) && (e.ys.diabetes===0)){
+        features_test.push(Object.values(e.xs));
+        target_test.push(e.ys.diabetes);
+        
+        test_counter_non_diabetes++;
+      } else  {//we already have enough testing samples
+        features.push(Object.values(e.xs));
+        target.push(e.ys.diabetes);  
+      }    
 
-      if (e.ys.diabetes === 0)
-        counter_no_diabetes++;
-      else
-        counter_diabetes++
+
     });
-
-    console.log("No diabetes", counter_no_diabetes);
-    console.log("diabetes", counter_diabetes);
 
     this.shuffle(features, target);
 
     const features_tensor_raw = tf.tensor2d(features, [features.length, numOfFeatures]);
-    const target_tensor = tf.tensor2d(target, [target.length, 1])
+    const target_tensor = tf.tensor2d(target, [target.length, 1]);    
 
-    // features_tensor.print();
-    // features_tensor.print();
-    // const aux = this.normalize(features_tensor);
 
     //mean and std
-    let { dataMean, dataStd } = this.determineMeanAndStddev(features_tensor_raw);
-    const features_tensor = this.normalizeTensor(features_tensor_raw, dataMean, dataStd);
+    // let { dataMean, dataStd } = this.determineMeanAndStddev(features_tensor_raw);
+    // const features_tensor = this.normalizeTensor(features_tensor_raw, dataMean, dataStd);
 
     // aux.print()
 
@@ -219,10 +263,30 @@ export class Model6Component implements OnInit {
       ],
     });
 
-    // Output value should be near 0.
-    (model.predict(tf.tensor2d([[80, 0, 1, 25.19, 6.6, 140]])) as tf.Tensor).print();
-    // Output value should be near 1.
-    (model.predict(tf.tensor2d([[44, 0, 0, 19.31, 6.5, 200]])) as tf.Tensor).print();
+    // // Output value should be near 0.
+    // (model.predict(tf.tensor2d([[80, 0, 1, 25.19, 6.6, 140]])) as tf.Tensor).print();
+    // // Output value should be near 1.
+    // (model.predict(tf.tensor2d([[44, 0, 0, 19.31, 6.5, 200]])) as tf.Tensor).print();
+
+    // const aux_prediction = this.batmanbelt.predict(model,[44, 0, 0, 19.31, 6.5, 200]);
+    
+    // console.log("Output value should be near 1: ", aux_prediction);
+
+
+    //Downloading the final model    
+    await model.save('downloads://my-model');
+    console.log(target_test);
+    
+    // const confusion_matrix: any =  await this.batmanbelt.confusionMatrix(model, features_test, target_test);
+    const confusion_matrix: any =  await this.tfmetrics.confusionMatrix(model, features_test, target_test);
+
+    console.log([confusion_matrix]);
+
+    // const performance= this.batmanbelt.performance_metrics(confusion_matrix);
+    const performance= this.tfmetrics.performance_metrics(confusion_matrix);
+
+    console.log("Performance: ", performance);
+
 
   }
 
